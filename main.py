@@ -1,3 +1,6 @@
+# TODO deal with empy racks upon next tiling, next playering (fill racks)
+# TODO start work on legal move check (color or shape match, not both)
+
 import pygame
 import sys
 import math, random
@@ -204,11 +207,14 @@ def l_check_att(placed, cursor):
             return True
     return False
 
-def l_place_cursor_att(placed, cursor):
+def l_place_cursor_att(placed, cursor, racks, selected):
     if l_check_att(placed, cursor):
         placed.append(cursor)
-        cursor = Tile((0, 0))
-    return placed, cursor
+        placed[-1].move_snap_first(pygame.mouse.get_pos())
+        cursor, racks, selected = l_next_tile(cursor, racks, selected)
+        racks[selected[0]].remove(placed[-1])
+    return placed, cursor, racks, selected
+
 def l_next_player(cursor, racks, selected):
     if selected[0] < len(racks) - 1:
         selected[0] += 1
@@ -224,6 +230,8 @@ def l_next_tile(cursor, racks, selected):
     else:
         selected[1] = 0
     cursor = racks[selected[0]].tiles[selected[1]]
+    if len(racks[selected[0]].tiles) == 1:
+        cursor = None
     return cursor, racks, selected
 
 tileset = []
@@ -237,15 +245,15 @@ racks = []
 for i in range(2):
     racks.append(Rack(tileset, i))
 
-# rack = Rack(tileset)
-# print([(rack.tiles[i].shape, rack.tiles[i].colour) for i in range(len(rack.tiles))])
-
 placed = []
 scores = [0, 0]
 selected = [0, 0]
 cursor = racks[selected[0]].tiles[0]
 
 while True:
+    if cursor is not None:
+        cursor.move_snap_first(pygame.mouse.get_pos())
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             proper_exit()
@@ -267,7 +275,8 @@ while True:
             if pygame.mouse.get_pressed()[0]:
                 # placed, cursor = l_place_cursor(placed, cursor)
                 # placed, cursor = l_place_cursor_not_occ(placed, cursor)
-                placed, cursor = l_place_cursor_att(placed, cursor)
+                placed, cursor, racks, selected = \
+                    l_place_cursor_att(placed, cursor, racks, selected)
 
 
     screen.fill(BG)
@@ -282,10 +291,9 @@ while True:
         score_text_rect = score_text.get_rect(center = (200, sh//4 + sh//2 * index))
         screen.blit(score_text, score_text_rect)
 
-    cursor.move_snap_first(pygame.mouse.get_pos())
-
     draw_grid(screen)
-    cursor.draw(screen)
+    if cursor is not None:
+        cursor.draw(screen)
 
     for rack in racks:
         rack.draw(screen)
