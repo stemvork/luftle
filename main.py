@@ -8,6 +8,11 @@ FPS = 30
 clock = pygame.time.Clock()
 
 screen = pygame.display.set_mode(flags=pygame.FULLSCREEN)
+font   = pygame.font.SysFont("Arial", 320, True)
+
+sw     = screen.get_width()
+sh     = screen.get_height()
+CENTER = (sw//2, sh//2)
 
 WIDTH = 50
 
@@ -120,8 +125,9 @@ class Tile:
             pygame.draw.circle(self.image, colour, (center, center), flow_r + 1)
 
 class Rack:
-    def __init__(self, tileset=None):
-        self.tiles = []
+    def __init__(self, tileset=None, yh=0):
+        self.tiles  = []
+        self.height = yh
         if tileset is not None:
             self.deal(tileset)
 
@@ -136,9 +142,9 @@ class Rack:
         i = self.tiles.index(tile)
         return self.tiles.pop(i)
     
-    def draw(self, _screen, height=0):
+    def draw(self, _screen):
         for index, tile in enumerate(self.tiles):
-            tile.move_grid((index, height))
+            tile.move_grid((index, self.height))
             tile.draw(_screen)
 
 # UI RELATED
@@ -203,9 +209,22 @@ def l_place_cursor_att(placed, cursor):
         placed.append(cursor)
         cursor = Tile((0, 0))
     return placed, cursor
+def l_next_player(cursor, racks, selected):
+    if selected[0] < len(racks) - 1:
+        selected[0] += 1
+    else:
+        selected[0] = 0
+    selected[1] = 0
+    cursor = racks[selected[0]].tiles[selected[1]]
+    return cursor, racks, selected
 
-cursor = Tile()
-cursor.move((2, 2))
+def l_next_tile(cursor, racks, selected):
+    if selected[1] < len(racks[selected[0]].tiles) - 1:
+        selected[1] += 1
+    else:
+        selected[1] = 0
+    cursor = racks[selected[0]].tiles[selected[1]]
+    return cursor, racks, selected
 
 tileset = []
 for i in range(6):
@@ -214,10 +233,17 @@ for i in range(6):
             tileset.append(Tile((i, j)))
 random.shuffle(tileset)
 
-rack = Rack(tileset)
-print([(rack.tiles[i].shape, rack.tiles[i].colour) for i in range(len(rack.tiles))])
+racks = []
+for i in range(2):
+    racks.append(Rack(tileset, i))
+
+# rack = Rack(tileset)
+# print([(rack.tiles[i].shape, rack.tiles[i].colour) for i in range(len(rack.tiles))])
 
 placed = []
+scores = [0, 0]
+selected = [0, 0]
+cursor = racks[selected[0]].tiles[0]
 
 while True:
     for event in pygame.event.get():
@@ -226,10 +252,6 @@ while True:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 proper_exit()
-            # c, s, space are test functions now
-            # space should select next tile
-            # enter should confirm placement and switch player
-            # TODO player has rack, has name, has score
             elif event.key == pygame.K_c:
                 cursor.set_colour()
                 cursor.render()
@@ -237,7 +259,10 @@ while True:
                 cursor.set_shape()
                 cursor.render()
             elif event.key == pygame.K_SPACE:
-                pass
+                cursor, racks, selected = l_next_tile(cursor, racks, selected)
+            elif event.key == pygame.K_RETURN:
+                # confirm placement, then switch
+                cursor, racks, selected = l_next_player(cursor, racks, selected)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if pygame.mouse.get_pressed()[0]:
                 # placed, cursor = l_place_cursor(placed, cursor)
@@ -247,16 +272,24 @@ while True:
 
     screen.fill(BG)
 
-    # TODO large count of remaining tiles
-    # TODO Scoreboard
-    # TODO Two players/racks
+    count_text = font.render(str(len(tileset)), True, WHITE)
+    count_text_rect = count_text.get_rect(center = CENTER)
+    screen.blit(count_text, count_text_rect)
+
+    for index, score in enumerate(scores):
+        score_colour = WHITE if index is not selected[0] else COLOURS[0]
+        score_text = font.render(str(score), True, score_colour)
+        score_text_rect = score_text.get_rect(center = (200, sh//4 + sh//2 * index))
+        screen.blit(score_text, score_text_rect)
 
     cursor.move_snap_first(pygame.mouse.get_pos())
 
     draw_grid(screen)
     cursor.draw(screen)
 
-    rack.draw(screen)
+    for rack in racks:
+        rack.draw(screen)
+
     draw_list(screen, placed)
 
     pygame.display.flip()
