@@ -1,4 +1,3 @@
-# TODO deal with empy racks upon next tiling, next playering (fill racks)
 # TODO start work on legal move check (color or shape match, not both)
 
 import pygame
@@ -135,7 +134,8 @@ class Rack:
             self.deal(tileset)
 
     def deal(self, tileset):
-        for i in range(6):
+        dn = 6 - len(self.tiles)
+        for i in range(dn):
             self.add(tileset.pop())
 
     def add(self, tile):
@@ -208,20 +208,25 @@ def l_check_att(placed, cursor):
     return False
 
 def l_place_cursor_att(placed, cursor, racks, selected):
-    if l_check_att(placed, cursor):
-        placed.append(cursor)
-        placed[-1].move_snap_first(pygame.mouse.get_pos())
-        cursor, racks, selected = l_next_tile(cursor, racks, selected)
-        racks[selected[0]].remove(placed[-1])
+    if len(racks[selected[0]].tiles) > 0:
+        if l_check_att(placed, cursor):
+            placed.append(cursor)
+            placed[-1].move_snap_first(pygame.mouse.get_pos())
+            cursor, racks, selected = l_next_tile(cursor, racks, selected)
+            racks[selected[0]].remove(placed[-1])
     return placed, cursor, racks, selected
 
 def l_next_player(cursor, racks, selected):
+    racks[selected[0]].deal(tileset)
+
     if selected[0] < len(racks) - 1:
         selected[0] += 1
     else:
         selected[0] = 0
     selected[1] = 0
-    cursor = racks[selected[0]].tiles[selected[1]]
+
+    if len(racks[selected[0]].tiles) > 0:
+        cursor = racks[selected[0]].tiles[selected[1]]
     return cursor, racks, selected
 
 def l_next_tile(cursor, racks, selected):
@@ -229,9 +234,12 @@ def l_next_tile(cursor, racks, selected):
         selected[1] += 1
     else:
         selected[1] = 0
-    cursor = racks[selected[0]].tiles[selected[1]]
+
     if len(racks[selected[0]].tiles) == 1:
         cursor = None
+    else:
+        cursor = racks[selected[0]].tiles[selected[1]]
+
     return cursor, racks, selected
 
 tileset = []
@@ -269,7 +277,6 @@ while True:
             elif event.key == pygame.K_SPACE:
                 cursor, racks, selected = l_next_tile(cursor, racks, selected)
             elif event.key == pygame.K_RETURN:
-                # confirm placement, then switch
                 cursor, racks, selected = l_next_player(cursor, racks, selected)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if pygame.mouse.get_pressed()[0]:
