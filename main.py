@@ -1,5 +1,11 @@
 # TODO start work on legal move check (color or shape match, not both)
 
+# TODO introduce second order checking: contiguous line from direction
+
+# TODO introduce highlight for next legal position during turn 
+# TODO that is: neighs for first tile, and line after second tile
+
+
 import pygame
 import sys
 import math, random
@@ -207,6 +213,32 @@ def l_check_att(placed, cursor):
             return True
     return False
 
+def l_get_neighs(placed, cursor):
+    neighs = []
+    for tile in placed:
+        dx = tile.x - cursor.x
+        dy = tile.y - cursor.y
+        if (dx, dy) in NEIGHS:
+            neighs.append(tile)
+    return neighs
+
+def l_check_legal(placed, cursor):
+    if len(placed) == 0:
+        return True
+    direct_neighs = l_get_neighs(placed, cursor)
+    print((cursor.colour, cursor.shape), [(n.colour, n.shape) for n in direct_neighs])
+    legal = True
+    for n in direct_neighs:
+        if cursor.shape is n.shape and cursor.colour is n.colour:
+            legal = False
+        elif cursor.shape is n.shape and cursor.colour is not n.colour:
+            pass
+        elif cursor.shape is not n.shape and cursor.colour is n.colour:
+            pass
+        else:
+            legal = False
+    return legal
+
 def l_place_cursor_att(placed, cursor, racks, selected):
     if len(racks[selected[0]].tiles) > 0:
         if l_check_att(placed, cursor):
@@ -214,6 +246,16 @@ def l_place_cursor_att(placed, cursor, racks, selected):
             placed[-1].move_snap_first(pygame.mouse.get_pos())
             cursor, racks, selected = l_next_tile(cursor, racks, selected)
             racks[selected[0]].remove(placed[-1])
+    return placed, cursor, racks, selected
+
+def l_place_cursor_legal(placed, cursor, racks, selected):
+    if len(racks[selected[0]].tiles) > 0:
+        if l_check_att(placed, cursor):
+            if l_check_legal(placed, cursor):
+                placed.append(cursor)
+                placed[-1].move_snap_first(pygame.mouse.get_pos())
+                placed, cursor, racks, selected = \
+                        l_next_play(placed, cursor, racks, selected)
     return placed, cursor, racks, selected
 
 def l_next_player(cursor, racks, selected):
@@ -229,7 +271,7 @@ def l_next_player(cursor, racks, selected):
         cursor = racks[selected[0]].tiles[selected[1]]
     return cursor, racks, selected
 
-def l_next_tile(cursor, racks, selected):
+def l_next_tile(placed, cursor, racks, selected):
     if selected[1] < len(racks[selected[0]].tiles) - 1:
         selected[1] += 1
     else:
@@ -240,7 +282,21 @@ def l_next_tile(cursor, racks, selected):
     else:
         cursor = racks[selected[0]].tiles[selected[1]]
 
-    return cursor, racks, selected
+    return placed, cursor, racks, selected
+
+def l_next_play(placed, cursor, racks, selected):
+    if selected[1] < len(racks[selected[0]].tiles) - 1:
+        selected[1] += 1
+    else:
+        selected[1] = 0
+
+    if len(racks[selected[0]].tiles) == 1:
+        cursor = None
+    else:
+        cursor = racks[selected[0]].tiles[selected[1]]
+
+    racks[selected[0]].remove(placed[-1])
+    return placed, cursor, racks, selected
 
 tileset = []
 for i in range(6):
@@ -275,16 +331,18 @@ while True:
                 cursor.set_shape()
                 cursor.render()
             elif event.key == pygame.K_SPACE:
-                cursor, racks, selected = l_next_tile(cursor, racks, selected)
+                placed, cursor, racks, selected = \
+                        l_next_tile(placed, cursor, racks, selected)
             elif event.key == pygame.K_RETURN:
                 cursor, racks, selected = l_next_player(cursor, racks, selected)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if pygame.mouse.get_pressed()[0]:
                 # placed, cursor = l_place_cursor(placed, cursor)
                 # placed, cursor = l_place_cursor_not_occ(placed, cursor)
+                # placed, cursor, racks, selected = \
+                #     l_place_cursor_att(placed, cursor, racks, selected)
                 placed, cursor, racks, selected = \
-                    l_place_cursor_att(placed, cursor, racks, selected)
-
+                    l_place_cursor_legal(placed, cursor, racks, selected)
 
     screen.fill(BG)
 
