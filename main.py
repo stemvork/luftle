@@ -42,6 +42,7 @@ class Tile:
         self.y = 0
         self.colour = colshape[0]
         self.shape  = colshape[1]
+        self.colshape = colshape
         self.image = pygame.Surface((WIDTH, WIDTH))
         self.rect  = self.image.get_rect()
         self.image.fill(WHITE)
@@ -74,6 +75,7 @@ class Tile:
                 self.colour += 1
             else:
                 self.colour = 0
+        self.colshape = (self.colshape[0], self.colour)
 
     def set_shape(self, shape=None):
         if shape is None:
@@ -81,6 +83,7 @@ class Tile:
                 self.shape += 1
             else:
                 self.shape = 0
+        self.colshape = (self.shape, self.colshape[1])
 
     def render(self):
         self.image.fill(BLACK)
@@ -207,12 +210,30 @@ def l_has_neigh(placed, _tile):
             return True
     return False
 
+def l_valid_neigh(placed, _tile):
+    flags = []
+    for tile in placed:
+        dx = tile.x - _tile.x
+        dy = tile.y - _tile.y
+        if (dx, dy) in NEIGHS:
+            _flag = True
+            if tile.colshape == _tile.colshape: # identical
+                _flag = False
+                print("IDENTICAL", tile.colshape)
+            elif tile.colour != _tile.colour and tile.shape != _tile.shape:
+                _flag = False # incompatible
+                print("INCOMPATIBLE", tile.colshape)
+            flags.append(_flag)
+    print("flags", flags)
+    return min(flags)
+
 def l_check_att(placed, cursor):
     if len(placed) == 0:
         return True
     if not l_check_occ(placed, cursor):
         if l_has_neigh(placed, cursor):
-            return True
+            if l_valid_neigh(placed, cursor):
+                return True
     return False
 
 def l_place_cursor_att(placed, cursor, racks, selected):
