@@ -9,14 +9,22 @@ pygame.init()
 FPS = 30
 clock = pygame.time.Clock()
 
-screen = pygame.display.set_mode(flags=pygame.FULLSCREEN)
-font   = pygame.font.SysFont("Arial", 320, True)
+DEBUG = True
+
+if DEBUG:
+    screen = pygame.display.set_mode((600, 600))
+    font   = pygame.font.SysFont("Arial", 128, True)
+    WIDTH = 20
+
+else:
+    screen = pygame.display.set_mode(flags=pygame.FULLSCREEN)
+    font   = pygame.font.SysFont("Arial", 320, True)
+    WIDTH = 50
 
 sw     = screen.get_width()
 sh     = screen.get_height()
 CENTER = (sw//2, sh//2)
 
-WIDTH = 50
 
 BLACK = (0, 0, 0)
 BG    = (20, 50, 80)
@@ -78,14 +86,14 @@ class Tile:
         self.image.fill(BLACK)
         colour      = pygame.Color(COLOURS[self.colour])
         center      = WIDTH // 2
-        rect_offset = 7
-        circ_offset = 6
-        diam_offset = 5
-        x_offset    = 6
-        x_width     = 6
-        star_offset = 3
-        flow_c_off  = 11
-        flow_r      = center // 2 - 4
+        rect_offset = 7/50 * WIDTH
+        circ_offset = 6/50 * WIDTH
+        diam_offset = 5/50 * WIDTH
+        x_offset    = 6/50 * WIDTH
+        x_width     = 6/50 * WIDTH
+        star_offset = 3/50 * WIDTH
+        flow_c_off  = 11/50 * WIDTH
+        flow_r      = center // 2 - 4/50 * WIDTH
         if self.shape == 0:
             pygame.draw.rect(self.image, colour,
                     (rect_offset, rect_offset, 
@@ -295,7 +303,8 @@ while True:
     for index, score in enumerate(scores):
         score_colour = WHITE if index is not selected[0] else COLOURS[0]
         score_text = font.render(str(score), True, score_colour)
-        score_text_rect = score_text.get_rect(center = (200, sh//4 + sh//2 * index))
+        score_text_rect = score_text.get_rect(center = 
+                (4*WIDTH, sh//4 + sh//2 * index))
         screen.blit(score_text, score_text_rect)
 
     draw_grid(screen)
