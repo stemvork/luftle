@@ -9,7 +9,7 @@ pygame.init()
 FPS = 30
 clock = pygame.time.Clock()
 
-DEBUG = True
+DEBUG = False
 
 if DEBUG:
     screen = pygame.display.set_mode((600, 600))
@@ -223,8 +223,13 @@ def l_valid_neigh(placed, _tile):
             elif tile.colour != _tile.colour and tile.shape != _tile.shape:
                 _flag = False # incompatible
                 print("INCOMPATIBLE", tile.colshape)
-            flags.append(_flag)
-    print("flags", flags)
+            if not _flag:
+                return False
+            else:
+                flags.append(True)
+                _cont = l_retrieve_contiguous(placed, cursor, (dx, dy))
+                print((tile.x, tile.y), (dx, dy), _cont)
+                # check valid
     return min(flags)
 
 def l_check_att(placed, cursor):
@@ -270,6 +275,9 @@ def l_next_tile(cursor, racks, selected):
         cursor = racks[selected[0]].tiles[selected[1]]
 
     return cursor, racks, selected
+
+def l_retrieve_contiguous(placed, cursor, direction): 
+    return False
 
 tileset = []
 for i in range(6):
@@ -317,17 +325,22 @@ while True:
 
     screen.fill(BG)
 
+    alpha_surf = pygame.Surface(screen.get_size())
+    alpha_surf.set_colorkey(BLACK)
+    alpha_surf.set_alpha(35)
     count_text = font.render(str(len(tileset)), True, WHITE)
     count_text_rect = count_text.get_rect(center = CENTER)
-    screen.blit(count_text, count_text_rect)
+    alpha_surf.blit(count_text, count_text_rect)
+
 
     for index, score in enumerate(scores):
         score_colour = WHITE if index is not selected[0] else COLOURS[0]
         score_text = font.render(str(score), True, score_colour)
         score_text_rect = score_text.get_rect(center = 
                 (4*WIDTH, sh//4 + sh//2 * index))
-        screen.blit(score_text, score_text_rect)
+        alpha_surf.blit(score_text, score_text_rect)
 
+    screen.blit(alpha_surf, alpha_surf.get_rect())
     draw_grid(screen)
     if cursor is not None:
         cursor.draw(screen)
@@ -339,4 +352,5 @@ while True:
 
     pygame.display.flip()
     clock.tick(FPS)
+
 
